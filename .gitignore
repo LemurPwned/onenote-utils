@@ -1,3 +1,9 @@
+# local 
+config.py 
+main.py 
+msg.py
+notedownload.py 
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

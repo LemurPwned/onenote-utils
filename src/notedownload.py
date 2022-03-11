@@ -1,77 +1,93 @@
 
-
-from config import CLIENT_SECRET, CLIENT_ID, TENNANT_ID
-
-from requests_oauthlib import OAuth2Session
-from oauthlib.oauth2 import BackendApplicationClient
-
+import uuid
+from azure.identity import DeviceCodeCredential
+from msgraph.core import GraphClient
+from config import CLIENT_ID
+from tqdm import tqdm
+import logging
 import os 
-ME_URL = "https://graph.microsoft.com/v1.0/me/onenote{}"
-CORE_URL = "https://graph.microsoft.com/v1.0/users/{}/onenote{}"
-PAGE_URL = "https://graph.microsoft.com/v1.0/me/onenote/pages/{note_id}/content"
+import re 
+
+
+logger = logging.getLogger(__file__)
+
+xml_finder = re.compile("<\?xml version=")
+xml_finito_finder = re.compile("</inkml:ink>") # this is the ending tag
 
 
 class NoteDownloader:
-    def __init__(self, client_id: str, client_secret: str, directory_id: str) -> None:
-        self.scope = ["https://graph.microsoft.com/.default"]
-        self.token_url = "https://login.microsoftonline.com/{}/oauth2/v2.0/token"
-        self.session, self.token = self.__init_session(
-            client_id, client_secret, directory_id
-        )
-        self.headers = {
-            "Authorization": "Bearer {}".format(
-                self.token
-            )
-        }
+    """
+    Use GraphAPI + Azure Identity library to authenticate and access 
+    OneNoteAPI. Download all the pages and save them under sections pages.
+    """
+    def __init__(self, client_id: str, target_note_location: os.PathLike) -> None:
+        scopes = ['User.Read.All', 'Notes.Read.All', 'Notes.Create', 'Notes.Read', 'Notes.ReadWrite']
+        # scopes = ['User.Read.All', 'Notes.Read.All', 'Notes.Read', 'Notes.ReadWrite']
+        credential = DeviceCodeCredential(client_id=client_id,  tenant_id="common")
+        self.client = GraphClient(credential=credential, scopes=scopes)
+        self.target_note_location = target_note_location
 
-    def __init_session(self, client_id: str, client_secret: str, directory_id: str):
+    def __locate_xml_part(self, response_content: str):
         """
-        OAuth2 to get access token
-        First set up a backend client, mind to set grant_type
-        build a OAuth2 Session with the client
-        get access token
-
-        Mind: python 3.x oauthlib requires scope params on more calls than py 2.x
+        OneNote Graph API returns lotta rubbish alongside 
+        the actual XML response, so let's strip the XML
+        out of the response
         """
-        client = BackendApplicationClient(
-            client_id=client_id, scope=self.scope, grant_type="client_credentials")
-        session = OAuth2Session(client=client, scope=self.scope)
-        # fill access token
-        token = session.fetch_token(token_url=self.token_url.format(directory_id),
-                                    client_id=client_id,
-                                    scope=self.scope,
-                                    client_secret=client_secret)
+        if isinstance(response_content, bytes):
+            # make sure we're working with a string
+            response_content = str(response_content)
+        match_start = xml_finder.search(response_content)
+        match_end  = xml_finito_finder.search(response_content)
+        if (not match_start) or (not match_end):
+            raise ValueError("Could not locate boundaries of the XML in the response!")
+        start = match_start.span()[0]
+        end = match_end.span()[-1]
+        return response_content[start:end]
+        
 
-        return session, token
+    def __iterate_pages(self):
+        result = self.client.get('/me/onenote/pages').json()
+        for page in result['value']:
+            page_id  = page['id']
+            # the source section
+            yield self.__fetch_page(page_id)
 
+    def __fetch_page(self, note_id: int):
+        # get the page infor first 
+        response = self.client.get(f'/me/onenote/pages/{note_id}')
+        note_info = response.json()
+        if not (response.status_code in (200, 202)):
+            logger.error(f"Request for page: {note_id} info failed!")
+            return None, None
+        response = self.client.get(f'/me/onenote/pages/{note_id}/content?includeinkML=true')
+        if not (response.status_code in (200, 202)):
+            logger.error(f"Request for page: {note_id} info failed!")
+            return None, None
+        xml_response = response.content # this is in fact XML + rubbish 
+        try:
+            xml_response = self.__locate_xml_part(xml_response) # this is going to be pure xml
+        except ValueError as e:
+            logger.error(e)
+            return None, None
+        return xml_response, note_info
 
-    def download_note(self, note_id: str, include_ink: bool = True):
-        req_url = PAGE_URL.format(note_id)
-        headers = {
-            "Authorization": "Bearer {}".format(
-                os.environ["API_TOKEN"]
+    def save_notes(self):
+        for (note, note_info) in tqdm(self.__iterate_pages(), 
+        desc='Parsing all pages from OneNote...'):
+            if note is None:
+                continue
+            note_title = note_info['title'].replace(" ", "_")
+            if not len(note_title):
+                note_title = str(uuid.uuid4)
+            note_path = os.path.join(
+                self.target_note_location, 
+                note_info['parentSection']['displayName'].replace(" ", "_")
             )
-        }
-        if include_ink:
-            req_url += "?includeinkML=true"
-        self.session.get(
-            req_url, headers=headers
-        )
-
-
-    def list_notebooks(self, uid: str):
-        PTH = CORE_URL.format(uid, "/notebooks")
-        # PTH = ME_URL.format("/notebooks")
-        response = self.session.get(PTH , headers=self.headers)
-        print(response.status_code)
-        print(response.json())
-
-
-
+            os.makedirs(note_path, exist_ok=True)
+            # no need to parse the XML, let's download first
+            with open(os.path.join(note_path,  f"{note_title}.xml"), 'w') as f:
+                f.write(note)
 
 if __name__ == "__main__":
-    nd = NoteDownloader(
-        CLIENT_ID, CLIENT_SECRET, TENNANT_ID
-    )
-    UID = "2DEA5DF71E06A510"
-    nd.list_notebooks(uid=UID)
+    nd = NoteDownloader(CLIENT_ID, target_note_location='/Users/jm/Documents/Notes')
+    nd.save_notes()

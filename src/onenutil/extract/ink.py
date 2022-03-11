@@ -63,11 +63,11 @@ def generate_image_from_xml(filename: os.PathLike,
 
 
 
-from requests_oauthlib import OAuth2Session
-import config
-MSGRAPH = OAuth2Session(config.CLIENT_ID,
-                        redirect_uri=config.REDIRECT_URI,
-                        scope=config.SCOPES)
+# from requests_oauthlib import OAuth2Session
+# import config
+# MSGRAPH = OAuth2Session(config.CLIENT_ID,
+#                         redirect_uri=config.REDIRECT_URI,
+#                         scope=config.SCOPES)
 
 # trace_objs, max_x, max_y = read_file("test_note.xml")
 # print(max_x, max_y)
