@@ -10,8 +10,8 @@ from nltk.corpus import stopwords
 from rich.progress import track
 from tqdm import tqdm
 
-from onenutil.interface.zotero_con import ZoteroCon
-from onenutil.schemas.results import ZoteroExtractionResult
+from .interface.zotero_con import ZoteroCon
+from .schemas.results import ZoteroExtractionResult
 
 from .extract.pdf import extract_text_pdf
 from .extract.ranking import TagExtractor
@@ -82,6 +82,9 @@ def create_article_index(es: Elasticsearch,
                 },
                 "summary": {
                     "type": "text"
+                },
+                "authors": {
+                    "type": "keyword"
                 },
                 "embedding": {
                     "type": "dense_vector",
@@ -154,7 +157,7 @@ def stream_pdfs(pdf_folder: os.PathLike) -> Iterable[Dict[str, str]]:
 
 def stream_zotero() -> Iterable[Dict[str, str]]:
     """Streams zotero data to ES server"""
-    zotero_streamer = ZoteroCon()
+    zotero_streamer = ZoteroCon.create_zotero_connection()
     item: ZoteroExtractionResult
     for item in zotero_streamer():
         yield {
@@ -163,6 +166,7 @@ def stream_zotero() -> Iterable[Dict[str, str]]:
                 "title": item.article_name,
                 "keywords": item.article_tags.keywords,
                 "summary": item.article_tags.summary,
+                "authors": item.article_authors,
                 "embedding": item.article_embeddings.embedding,
             }
         }

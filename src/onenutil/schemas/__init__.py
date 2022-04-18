@@ -1,5 +1,6 @@
-from .results import TagResult, EmbeddingsResult, ZoteroExtractionResult, SearchResult
+from .results import TagResult, EmbeddingsResult, ZoteroExtractionResult, SearchResult, ArticleSearchResult
 
 __all__ = [
-    "TagResult", "EmbeddingsResult", "ZoteroExtractionResult", "SearchResult"
+    "TagResult", "EmbeddingsResult", "ZoteroExtractionResult", "SearchResult",
+    "ArticleSearchResult"
 ]

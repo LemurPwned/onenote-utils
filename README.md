@@ -4,6 +4,8 @@ This is a package that allows you to do simple operations on OneNote notes writt
 Here's a listing of functionalities you may expect:
 
 1. Generating image or pdf from OneNote ink node.
+2. Link and generate search index from Zotero account 
+3. TUI supporting the searchable indexes from notes. 
 
 That's it.
 

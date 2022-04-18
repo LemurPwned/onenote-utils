@@ -19,7 +19,7 @@ class EmbeddingsExtractor:
         embeddings = self.model.encode(text)
 
         return EmbeddingsResult(
-            embedding=embeddings,
+            embedding=embeddings.tolist()[0],
             model_name=self.model_name
         )
 

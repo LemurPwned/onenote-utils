@@ -1,9 +1,12 @@
 import xml
 from typing import Dict, List
 
+from elasticsearch_dsl import DenseVector, FacetedSearch, TermsFacet
+from elasticsearch_dsl import Document, Keyword, Text
 from elasticsearch import Elasticsearch
 from prompt_toolkit import HTML, print_formatted_text
 from prompt_toolkit.styles import Style
+from onenutil.schemas import ArticleSearchResult
 
 style = Style.from_dict({
     "em": '#ff0066',
@@ -57,3 +60,66 @@ def search_format(search_list: List[Dict[str, str]], k: int = 10):
                 continue
         if i >= k:
             return
+
+
+class Article(Document):
+    """
+    Article class
+    """
+    title = Text()
+    keywords: Keyword()
+    summary: Text()
+    embedding: DenseVector(384)
+
+
+class ArticleSearch(FacetedSearch):
+    index = "articles"
+    doc_types = [Article]
+
+    facets = {
+        'keywords': TermsFacet(field='keywords'),
+        'authors': TermsFacet(field='authors')
+    }
+    fields = ['title', 'keywords', 'summary']
+    # facets = ['keywords', 'authors']
+
+
+def search_dsl(phrase: str) -> List[str]:
+    """Search using the elasticsearch_dsl library.
+    :param phrase: basic query string search on content field
+    """
+    s = ArticleSearch(phrase)
+    response = s.execute()
+    tag_terms = [(tag, count) for (tag, count, _) in response.facets.keywords]
+    authors_terms = [(authors, count)
+                     for (authors, count, _) in response.facets.authors]
+
+    scores = []
+    highlights = []
+    titles = []
+    tags = []
+    for hit in response.hits:
+        scores.append(hit.meta.score)
+        titles.append(hit.title)
+        highlight = []
+        for k in hit.meta.highlight:
+            highlight.append("\n".join(hit.meta.highlight[k]))
+        highlight = "\n".join(highlight)
+        highlights.append(highlight)
+        tags.append(",".join(hit.keywords))
+
+    return ArticleSearchResult(scores=scores,
+                               highlights=highlights,
+                               titles=titles,
+                               tags=tags,
+                               keyword_terms=tag_terms,
+                               authors_terms=authors_terms)
+
+
+if __name__ == "__main__":
+    from elasticsearch_dsl.connections import connections
+
+    connections.create_connection(hosts=["localhost"])
+    phrase = "machine learning"
+    search_list = search_dsl(phrase)
+    print(search_list)
