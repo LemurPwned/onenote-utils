@@ -1,3 +1,5 @@
+# Editable Git install with no remote (onenutil==1.0.0)
+-e /Users/jm/repos/onenote-utils/src
 azure-core==1.21.1
 azure-identity==1.7.1
 certifi==2021.10.8
@@ -14,8 +16,6 @@ msal-extensions==0.3.1
 msgraph-core==0.2.2
 nltk==3.6.7
 oauthlib==3.1.1
-# Editable Git install with no remote (onenutil==1.0.0)
--e /Users/jm/repos/onenote-utils/src
 pdfminer.six==20211012
 portalocker==2.3.2
 prompt-toolkit==3.0.24

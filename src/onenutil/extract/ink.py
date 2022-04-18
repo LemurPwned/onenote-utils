@@ -1,8 +1,9 @@
-from bs4 import BeautifulSoup
+import os
 from dataclasses import dataclass
 from typing import List, Tuple
+
+from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw
-import os
 
 
 @dataclass
@@ -16,12 +17,11 @@ class InkCoords:
 class Drawable:
     trace: List[InkCoords]
 
-    def plot_on_canvas(self, image: ImageDraw, scale_x: float = 1, scale_y: float = 1):
-        line_segs = [
-            (
-                tr.X*scale_x, tr.Y*scale_y
-            ) for tr in self.trace
-        ]
+    def plot_on_canvas(self,
+                       image: ImageDraw,
+                       scale_x: float = 1,
+                       scale_y: float = 1):
+        line_segs = [(tr.X * scale_x, tr.Y * scale_y) for tr in self.trace]
         image.line(line_segs, fill='black', width=3)
 
 
@@ -44,14 +44,10 @@ def read_file(filename: os.PathLike) -> Tuple[List[Drawable], int, int]:
             x, y, f = tr.split(" ")
             x = int(x)
             y = int(y)
-            full_trace.append(
-                InkCoords(x, y, int(f))
-            )
+            full_trace.append(InkCoords(x, y, int(f)))
             max_x = max(max_x, x)
             max_y = max(max_y, y)
-        trace_objs.append(
-            Drawable(full_trace)
-        )
+        trace_objs.append(Drawable(full_trace))
 
     return trace_objs, max_x, max_y
 
@@ -59,8 +55,6 @@ def read_file(filename: os.PathLike) -> Tuple[List[Drawable], int, int]:
 def generate_image_from_xml(filename: os.PathLike,
                             max_pixel_density: int = 10000) -> Image:
     ...
-
-
 
 
 # from requests_oauthlib import OAuth2Session
