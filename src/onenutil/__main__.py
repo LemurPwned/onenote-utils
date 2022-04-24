@@ -10,6 +10,7 @@ from .interface.term import SearchApp
 
 warnings.filterwarnings(action='ignore')
 
+
 @click.group()
 def cli():
     ...

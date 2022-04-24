@@ -8,7 +8,9 @@ Here's a listing of functionalities you may expect:
 3. TUI supporting the searchable indexes from notes.
 
 ## Overview
+
 ![Screenshot](./assets/screen.jpg)
+
 ## Quickstart
 
 Install by going:

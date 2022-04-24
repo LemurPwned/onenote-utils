@@ -181,9 +181,7 @@ def run_zotero_upload():
     es = create_es_instance()
     # create or replace the index
     create_article_index(es)
-    for ok, response in streaming_bulk(es,
-                                       actions=stream,
-                                       index="articles"):
+    for ok, response in streaming_bulk(es, actions=stream, index="articles"):
         if not ok:
             print(response)
 

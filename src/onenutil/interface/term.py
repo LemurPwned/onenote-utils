@@ -1,13 +1,14 @@
-from typing import List, Tuple
 import glob
+from typing import List, Tuple
+
 import rich.box
+from elasticsearch import NotFoundError
 from elasticsearch_dsl.connections import connections
 from rich.panel import Panel
 from rich.table import Table
 from textual.app import App
 from textual.widgets import Header, ScrollView, Static
 from textual_inputs import TextInput
-from elasticsearch import NotFoundError
 
 from onenutil.elastic import create_es_instance
 from onenutil.interface.search import search_dsl
