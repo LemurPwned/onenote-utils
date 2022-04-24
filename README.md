@@ -4,13 +4,11 @@ This is a package that allows you to do simple operations on OneNote notes writt
 Here's a listing of functionalities you may expect:
 
 1. Generating image or pdf from OneNote ink node.
-2. Link and generate search index from Zotero account 
-3. TUI supporting the searchable indexes from notes. 
+2. Link and generate search index from Zotero account
+3. TUI supporting the searchable indexes from notes.
 
-That's it.
-
-Cheers.
-
+## Overview
+![Screenshot](./assets/screen.jpg)
 ## Quickstart
 
 Install by going:
@@ -41,3 +39,6 @@ Uses:
 - `Beautiful Soup` 4 for XML parsing
 - `pillow` for Image generation
 - `MicrosoftGraph` for connecting to OneNote server and exporting your notes.
+- `pyzotero` for Zotero integration
+- `textual` and `rich` for TUI
+- `sentence_transformers` and `transformers` for embedding extraction and some OCR tasks

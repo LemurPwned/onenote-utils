@@ -1,14 +1,12 @@
-
 from collections import Counter
+
 from ..schemas import ZoteroExtractionResult
 
 
 class GraphStatistics:
+
     def __init__(self):
-        self.stats = {
-            'authors': Counter(),
-            'keywords': Counter(),
-            'total': 0}
+        self.stats = {'authors': Counter(), 'keywords': Counter(), 'total': 0}
 
     def add_zotero_entry(self, zotero_entry: ZoteroExtractionResult):
         for keyword in zotero_entry.article_tags.keywords:

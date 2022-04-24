@@ -2,11 +2,11 @@ import os
 from typing import Iterable
 
 from pyzotero import zotero
+from rich.progress import track
 
 from ..extract.embeddings import EmbeddingsExtractor
 from ..extract.ranking import TagExtractor
 from ..schemas import ZoteroExtractionResult
-from rich.progress import track
 
 
 class ZoteroCon:
@@ -66,10 +66,12 @@ class ZoteroCon:
                 f"{dat.get('firstName', '')} {dat.get('lastName', '')}"
                 for dat in item['data']['creators']
             ]
-
-            yield ZoteroExtractionResult(
-                article_tags=tags,
-                article_embeddings=embeddings,
-                article_name=item['data']['title'],
-                article_authors=authors,
-                abstract=abstract_content)
+            path = item['links'].get('attachment', '')
+            if path:
+                path = os.path.basename(path['href'])
+            yield ZoteroExtractionResult(article_tags=tags,
+                                         article_embeddings=embeddings,
+                                         article_name=item['data']['title'],
+                                         article_authors=authors,
+                                         article_path=path,
+                                         abstract=abstract_content)

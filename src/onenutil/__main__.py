@@ -1,21 +1,23 @@
 import os
+import warnings
 
 import click
 
 from .elastic import (create_es_instance, run_note_upload, run_zotero_upload,
                       stream_pdfs)
 from .interface.search import basic_search, search_format
-from .interface.shell import NoteSearchShell
+from .interface.term import SearchApp
 
+warnings.filterwarnings(action='ignore')
 
 @click.group()
 def cli():
     ...
 
 
-@cli.command(name='start', help="Start search shell")
+@cli.command(name='start', help="Start search application")
 def start_shell():
-    NoteSearchShell().cmdloop()
+    SearchApp.run(log="textual.log")
 
 
 @cli.command(name='search', help='Do a single search')

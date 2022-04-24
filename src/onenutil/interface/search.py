@@ -1,11 +1,12 @@
 import xml
 from typing import Dict, List
 
-from elasticsearch_dsl import DenseVector, FacetedSearch, TermsFacet
-from elasticsearch_dsl import Document, Keyword, Text
 from elasticsearch import Elasticsearch
+from elasticsearch_dsl import (DenseVector, Document, FacetedSearch, Keyword,
+                               TermsFacet, Text)
 from prompt_toolkit import HTML, print_formatted_text
 from prompt_toolkit.styles import Style
+
 from onenutil.schemas import ArticleSearchResult
 
 style = Style.from_dict({
@@ -81,13 +82,13 @@ class ArticleSearch(FacetedSearch):
         'authors': TermsFacet(field='authors')
     }
     fields = ['title', 'keywords', 'summary']
-    # facets = ['keywords', 'authors']
 
 
-def search_dsl(phrase: str) -> List[str]:
+def search_dsl(phrase: str, index: str = 'articles') -> List[str]:
     """Search using the elasticsearch_dsl library.
     :param phrase: basic query string search on content field
     """
+    ArticleSearch.index = index.strip()
     s = ArticleSearch(phrase)
     response = s.execute()
     tag_terms = [(tag, count) for (tag, count, _) in response.facets.keywords]
@@ -98,6 +99,7 @@ def search_dsl(phrase: str) -> List[str]:
     highlights = []
     titles = []
     tags = []
+    paths = []
     for hit in response.hits:
         scores.append(hit.meta.score)
         titles.append(hit.title)
@@ -107,11 +109,13 @@ def search_dsl(phrase: str) -> List[str]:
         highlight = "\n".join(highlight)
         highlights.append(highlight)
         tags.append(",".join(hit.keywords))
+        paths.append(hit.path)
 
     return ArticleSearchResult(scores=scores,
                                highlights=highlights,
                                titles=titles,
                                tags=tags,
+                               paths=paths,
                                keyword_terms=tag_terms,
                                authors_terms=authors_terms)
 

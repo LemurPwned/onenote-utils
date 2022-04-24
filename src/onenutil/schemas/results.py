@@ -38,6 +38,7 @@ class ZoteroExtractionResult:
     article_name: str
     article_authors: List[str]
     abstract: str = ""
+    article_path: str = ""
 
     def __rich_console__(self, console: Console,
                          options: ConsoleOptions) -> RenderResult:
@@ -109,3 +110,4 @@ class ArticleSearchResult:
     tags: List[str]
     keyword_terms: List[Tuple[str, int]]
     authors_terms: List[Tuple[str, int]]
+    paths: List[str]

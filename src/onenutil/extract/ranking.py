@@ -4,23 +4,25 @@ from typing import List
 
 import pytextrank
 import spacy
+
 from ..schemas import TagResult
-
-
 
 
 class TagExtractor:
     """Extract the tags from the text. Also produce the summary."""
-    def __init__(self, limit_phrases: int = 4, limit_sentences: int = 3) -> None:
+
+    def __init__(self,
+                 limit_phrases: int = 4,
+                 limit_sentences: int = 3) -> None:
         self.nlp = self.__initialise_spacy()
-        self.limit_phrases = limit_phrases 
+        self.limit_phrases = limit_phrases
         self.limit_sentences = limit_sentences
 
     def __initialise_spacy(self):
         nlp = spacy.load("en_core_web_sm")
         # add PyTextRank to the spaCy pipeline
         nlp.add_pipe("textrank")
-        return nlp 
+        return nlp
 
     def __call__(self, text: str) -> TagResult:
         doc = self.nlp(text)
@@ -47,7 +49,7 @@ class TagExtractor:
             if phrase_id == self.limit_phrases:
                 break
         sum_ranks = sum(unit_vector)
-        unit_vector = [ rank/sum_ranks for rank in unit_vector ]
+        unit_vector = [rank / sum_ranks for rank in unit_vector]
         sent_rank = {}
         sent_id = 0
         for sent_start, sent_end, sent_vector in sent_bounds:
@@ -66,6 +68,3 @@ class TagExtractor:
             for s_id in sent_rank[:self.limit_sentences]
         }
         return list(sent_text.values())
-
-
-

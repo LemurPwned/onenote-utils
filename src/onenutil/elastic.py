@@ -10,11 +10,10 @@ from nltk.corpus import stopwords
 from rich.progress import track
 from tqdm import tqdm
 
-from .interface.zotero_con import ZoteroCon
-from .schemas.results import ZoteroExtractionResult
-
 from .extract.pdf import extract_text_pdf
 from .extract.ranking import TagExtractor
+from .interface.zotero_con import ZoteroCon
+from .schemas.results import ZoteroExtractionResult
 
 eng_stopwords = stopwords.words('english')
 
@@ -73,6 +72,9 @@ def create_article_index(es: Elasticsearch,
                 "content": {
                     "type": "text",
                     "analyzer": "note_analyzer"
+                },
+                "path": {
+                    "type": "text"
                 },
                 "title": {
                     "type": "text"
@@ -167,6 +169,7 @@ def stream_zotero() -> Iterable[Dict[str, str]]:
                 "keywords": item.article_tags.keywords,
                 "summary": item.article_tags.summary,
                 "authors": item.article_authors,
+                "path": item.article_path,
                 "embedding": item.article_embeddings.embedding,
             }
         }
@@ -179,8 +182,7 @@ def run_zotero_upload():
     # create or replace the index
     create_article_index(es)
     for ok, response in streaming_bulk(es,
-                                       actions=tqdm(stream,
-                                                    desc='Streaming zotero'),
+                                       actions=stream,
                                        index="articles"):
         if not ok:
             print(response)
