@@ -1,5 +1,5 @@
-import os
 import getpass
+import os
 from typing import Iterable
 
 from pyzotero import zotero

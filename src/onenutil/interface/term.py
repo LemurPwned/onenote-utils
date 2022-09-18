@@ -7,14 +7,14 @@ from elasticsearch_dsl.connections import connections
 from rich.panel import Panel
 from rich.table import Table
 from textual.app import App
+from textual.reactive import Reactive
+from textual.widget import Widget
 from textual.widgets import Header, ScrollView, Static
 from textual_inputs import TextInput
 
 from onenutil.elastic import create_es_instance
 from onenutil.interface.search import search_dsl
 from onenutil.schemas.results import ArticleSearchResult
-from textual.reactive import Reactive
-from textual.widget import Widget
 
 
 class Hover(Widget):
