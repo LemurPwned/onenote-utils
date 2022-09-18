@@ -13,6 +13,23 @@ from textual_inputs import TextInput
 from onenutil.elastic import create_es_instance
 from onenutil.interface.search import search_dsl
 from onenutil.schemas.results import ArticleSearchResult
+from textual.reactive import Reactive
+from textual.widget import Widget
+
+
+class Hover(Widget):
+
+    mouse_over = Reactive(False)
+
+    def render(self) -> Panel:
+        return Panel("Hello [b]World[/b]",
+                     style=("on red" if self.mouse_over else ""))
+
+    def on_enter(self) -> None:
+        self.mouse_over = True
+
+    def on_leave(self) -> None:
+        self.mouse_over = False
 
 
 class SearchApp(App):

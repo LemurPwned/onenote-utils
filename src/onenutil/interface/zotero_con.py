@@ -1,4 +1,5 @@
 import os
+import getpass
 from typing import Iterable
 
 from pyzotero import zotero
@@ -30,7 +31,7 @@ class ZoteroCon:
             api_key = os.environ['ZOTERO_API_KEY']
         except KeyError:
             library_id = input('Zotero library id: ')
-            api_key = input('Zotero api key: ')
+            api_key = getpass.getpass('Zotero api key: ')
 
         return cls(library_id=library_id, api_key=api_key)
 
