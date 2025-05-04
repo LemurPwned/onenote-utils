@@ -28,18 +28,20 @@ class KindleToObsidianAgent:
         self.output_dir = output_dir
         self.model_name = model_name
         self.openai_api_key = openai_api_key
-        
+
         # Set up log file
         self.log_file = log_file or os.path.join(output_dir, "processing_log.txt")
 
         # Create output directory if it doesn't exist
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        
+
         # Clear log file if it exists
-        with open(self.log_file, 'w', encoding='utf-8') as f:
-            f.write(f"Kindle to Obsidian Processing Log - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        
+        with open(self.log_file, "w", encoding="utf-8") as f:
+            f.write(
+                f"Kindle to Obsidian Processing Log - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            )
+
         # Load highlights
         with open(highlights_file, "r", encoding="utf-8") as f:
             self.book_data = json.load(f)
@@ -73,7 +75,7 @@ class KindleToObsidianAgent:
     def log(self, message):
         """Write a message to the log file and also print it to console."""
         print(message)
-        with open(self.log_file, 'a', encoding='utf-8') as f:
+        with open(self.log_file, "a", encoding="utf-8") as f:
             f.write(f"{message}\n")
 
     def extract_key_concepts(
@@ -207,20 +209,20 @@ class KindleToObsidianAgent:
         """Extract references from the summary text."""
         paragraphs = {}
         # Split by paragraphs and process each one
-        for i, para in enumerate(summary.split('\n\n')):
+        for i, para in enumerate(summary.split("\n\n")):
             # Check if the paragraph has references
-            ref_match = re.search(r'\(ref: ((?:\[[0-9]+\](?:, )?)+)\)', para)
+            ref_match = re.search(r"\(ref: ((?:\[[0-9]+\](?:, )?)+)\)", para)
             if ref_match:
                 # Extract the paragraph content without the reference part
-                content = para.replace(ref_match.group(0), '').strip()
+                content = para.replace(ref_match.group(0), "").strip()
                 # Extract reference numbers
-                ref_numbers = re.findall(r'\[([0-9]+)\]', ref_match.group(1))
+                ref_numbers = re.findall(r"\[([0-9]+)\]", ref_match.group(1))
                 # Convert to zero-based indices (for array access)
                 references = [int(num) - 1 for num in ref_numbers]
                 paragraphs[f"para_{i}"] = {"content": content, "references": references}
             else:
                 paragraphs[f"para_{i}"] = {"content": para, "references": []}
-        
+
         return paragraphs
 
     def generate_tags(
@@ -265,12 +267,12 @@ class KindleToObsidianAgent:
 
         # Parse the summary to extract references
         parsed_summary = self.parse_summary_references(summary)
-        
+
         # Format summary with citations
         summary_md = []
         for _, para_data in parsed_summary.items():
             para_text = para_data["content"]
-            
+
             # Add references if available
             if para_data["references"]:
                 # Create links to the highlight section
@@ -279,12 +281,12 @@ class KindleToObsidianAgent:
                     if 0 <= ref_idx < len(highlights):
                         # Create a link to the highlight in the format ^highlight-N
                         ref_links.append(f"[[#^highlight-{ref_idx + 1}]]")
-            
+
                 if ref_links:
                     para_text += f" (Sources: {', '.join(ref_links)})"
-            
+
             summary_md.append(para_text)
-        
+
         summary_md = "\n\n".join(summary_md)
 
         # Format concepts as markdown + tags with citations
@@ -414,7 +416,7 @@ tags: {tags_str}
             # Add a separator for each book in the log
             separator = f"\n\n#### {title} ####\n"
             self.log(separator)
-            
+
             highlights = book_data["highlights"]
             author = book_data.get("author", "Unknown")
 
@@ -439,7 +441,7 @@ tags: {tags_str}
                 self.log(f"Created note at: {filepath}")
             else:
                 self.log(f"No highlights found for book: {title}")
-            
+
             self.log("\n" + "-" * 80)  # Add a line after each book's processing
 
 
@@ -470,16 +472,116 @@ def main():
         type=str,
         help="Path to log file (defaults to 'processing_log.txt' in output directory)",
     )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Run in interactive mode to select specific books",
+    )
 
     args = parser.parse_args()
 
+    # Load highlights file
+    with open(args.highlights, "r", encoding="utf-8") as f:
+        book_data = json.load(f)
+
+    # Create agent instance
     agent = KindleToObsidianAgent(
-        args.highlights, 
-        args.output, 
-        args.model, 
-        log_file=args.log
+        args.highlights, args.output, args.model, log_file=args.log
     )
-    agent.process_all_books()
+
+    if args.interactive:
+        process_books_interactively(agent, book_data)
+    else:
+        agent.process_all_books()
+
+
+def process_books_interactively(agent, book_data):
+    """Process books interactively, allowing user to select which books to process."""
+    book_titles = list(book_data.keys())
+    selected_books = []
+
+    if not book_titles:
+        print("No books found in the highlights file.")
+        return
+
+    # Display books in batches
+    batch_size = 10
+    current_index = 0
+
+    while current_index < len(book_titles):
+        print("\nAvailable books:")
+
+        # Display current batch of books
+        end_index = min(current_index + batch_size, len(book_titles))
+        for i in range(current_index, end_index):
+            print(f"{i+1}. {book_titles[i]}")
+
+        # Add option to see more books if there are more
+        if end_index < len(book_titles):
+            print(f"{end_index+1}. Show more books...")
+
+        # Add option to process selected books
+        if selected_books:
+            print("P. Process selected books")
+            print("A. Process all books")
+            print("Q. Quit without processing")
+        else:
+            print("A. Process all books")
+            print("Q. Quit")
+
+        # Get user choice
+        choice = input(
+            "\nEnter book numbers to process (comma-separated), or choose an option: "
+        ).strip()
+
+        if choice.upper() == "Q":
+            print("Exiting without processing any books.")
+            return
+
+        if choice.upper() == "A":
+            print("Processing all books...")
+            agent.process_all_books()
+            return
+
+        if choice.upper() == "P" and selected_books:
+            break
+
+        # Check if user wants to see more books
+        try:
+            if int(choice) == end_index + 1 and end_index < len(book_titles):
+                current_index = end_index
+                continue
+        except ValueError:
+            pass
+
+        # Process multiple selections
+        try:
+            selections = [int(x.strip()) for x in choice.split(",")]
+            for selection in selections:
+                if 1 <= selection <= len(book_titles):
+                    book_title = book_titles[selection - 1]
+                    if book_title not in selected_books:
+                        selected_books.append(book_title)
+                        print(f"Added: {book_title}")
+                else:
+                    print(f"Invalid selection: {selection}")
+        except ValueError:
+            print("Invalid input. Please enter numbers separated by commas.")
+
+    # Process selected books
+    if selected_books:
+        print(f"\nProcessing {len(selected_books)} selected books:")
+        for title in selected_books:
+            print(f"- {title}")
+
+        # Create a filtered book_data with only selected books
+        filtered_book_data = {title: book_data[title] for title in selected_books}
+
+        # Replace the agent's book_data with the filtered version
+        agent.book_data = filtered_book_data
+        agent.process_all_books()
+    else:
+        print("No books selected for processing.")
 
 
 if __name__ == "__main__":
